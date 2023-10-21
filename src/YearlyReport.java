@@ -2,9 +2,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class YearlyReport {
-    String year;
+    private String year;
     FileReader fileReader = new FileReader();
-    ArrayList<Transaction> transactions = new ArrayList<>();
+    ArrayList<YearlyReportTransaction> transactions = new ArrayList<>();
 
     void loadFile(String fileName) {
         year = fileName.substring(2,6);
@@ -12,7 +12,7 @@ public class YearlyReport {
         if (!lines.isEmpty()) {
             for (int i = 1; i < lines.size(); i++) {
                 String[] lineContents = lines.get(i).split(",");
-                Transaction transaction = new Transaction(lineContents, false);
+                YearlyReportTransaction transaction = new YearlyReportTransaction(lineContents);
                 transactions.add(transaction);
             }
             System.out.println("Файл успешно считан");
@@ -37,7 +37,7 @@ public class YearlyReport {
 
     private HashMap<String, Integer> makeIncomeSummaryMap() {
         HashMap<String, Integer> productSummary = new HashMap<>();
-        for (Transaction transaction : transactions) {
+        for (YearlyReportTransaction transaction : transactions) {
             int lastProductTransaction = productSummary.getOrDefault(transaction.name, 0);
             if (transaction.isExpence) {
                 productSummary.put(transaction.name, lastProductTransaction - transaction.amount);
@@ -50,11 +50,24 @@ public class YearlyReport {
 
     private float getAverageAnnualExpenceOrIncome(boolean IsAverageExpenceNeed) {
         float sum = 0;
-        for (Transaction transaction : transactions) {
+        for (YearlyReportTransaction transaction : transactions) {
             if ((IsAverageExpenceNeed && transaction.isExpence) || (!IsAverageExpenceNeed && !transaction.isExpence)) {
                 sum += transaction.amount;
             }
         }
         return sum / transactions.size();
+    }
+
+    HashMap<String, HashMap<Boolean, Integer>> createExpenceAndIncomeYearlyMap() {
+        HashMap<String, HashMap<Boolean, Integer>> informationByYearReport = new HashMap<>();
+        for (YearlyReportTransaction transaction : transactions) {
+            if(!informationByYearReport.containsKey(transaction.name)) {
+                informationByYearReport.put(transaction.name, new HashMap<>());
+            }
+            HashMap<Boolean, Integer> isExpenceToAmount = informationByYearReport.get(transaction.name);
+            isExpenceToAmount.put(transaction.isExpence, isExpenceToAmount.getOrDefault(transaction.isExpence,0) + transaction.amount);
+
+        }
+        return informationByYearReport;
     }
 }

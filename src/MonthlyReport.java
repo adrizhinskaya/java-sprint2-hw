@@ -3,15 +3,15 @@ import java.util.HashMap;
 
 public class MonthlyReport {
     FileReader fileReader = new FileReader();
-    HashMap<String, ArrayList<Transaction>> monthlyTransactionsMap = new HashMap<>();
+    HashMap<String, ArrayList<MonthlyReportTransaction>> monthlyTransactionsMap = new HashMap<>();
 
     void loadFile(String fileName) {
-        ArrayList<Transaction> transactions = new ArrayList<>();
+        ArrayList<MonthlyReportTransaction> transactions = new ArrayList<>();
         ArrayList<String> lines = fileReader.readFileContents(fileName); // считывание файла
         if (!lines.isEmpty()) {
             for (int i = 1; i < lines.size(); i++) {
                 String[] lineContents = lines.get(i).split(","); // массив строк(данных) из строки
-                Transaction transaction = new Transaction(lineContents, true); // перевод данных строки в объект Transaction
+                MonthlyReportTransaction transaction = new MonthlyReportTransaction(lineContents); // перевод данных строки в объект Transaction
                 transactions.add(transaction);
             }
             monthlyTransactionsMap.put(fileName.substring(6,8), transactions);
@@ -37,8 +37,8 @@ public class MonthlyReport {
 
     private HashMap<String, Integer> makeIncomeSummaryMap(String monthName) {
         HashMap<String, Integer> productSummary = new HashMap<>();
-        ArrayList<Transaction> currentMonthTransactions = monthlyTransactionsMap.get(monthName);
-        for (Transaction transaction : currentMonthTransactions) {
+        ArrayList<MonthlyReportTransaction> currentMonthTransactions = monthlyTransactionsMap.get(monthName);
+        for (MonthlyReportTransaction transaction : currentMonthTransactions) {
             int lastProductTransaction = productSummary.getOrDefault(transaction.name, 0);
             if (transaction.isExpence) {
                 productSummary.put(transaction.name, lastProductTransaction - transaction.amount);
@@ -62,15 +62,15 @@ public class MonthlyReport {
     }
 
     private void printMaxExpense(String monthName) {
-        Transaction maxExpenceTransaction = findMaxExpenceTransaction(monthName);
+        MonthlyReportTransaction maxExpenceTransaction = findMaxExpenceTransaction(monthName);
         System.out.println("Самая большая трата - " + maxExpenceTransaction.name + ". Сумма расхода - " + maxExpenceTransaction.amount);
     }
 
-    private Transaction findMaxExpenceTransaction(String monthName) {
-        Transaction maxExpenceTransaction = null;
-        ArrayList<Transaction> currentMonthTransactions = monthlyTransactionsMap.get(monthName);
+    private MonthlyReportTransaction findMaxExpenceTransaction(String monthName) {
+        MonthlyReportTransaction maxExpenceTransaction = null;
+        ArrayList<MonthlyReportTransaction> currentMonthTransactions = monthlyTransactionsMap.get(monthName);
 
-        for (Transaction transaction : currentMonthTransactions) {
+        for (MonthlyReportTransaction transaction : currentMonthTransactions) {
             if (maxExpenceTransaction == null) {
                 maxExpenceTransaction = transaction;
             } else if (transaction.isExpence && transaction.amount > maxExpenceTransaction.amount) {
@@ -80,5 +80,17 @@ public class MonthlyReport {
         return maxExpenceTransaction;
     }
 
-
+    HashMap<String, HashMap<Boolean, Integer>> createExpenceAndIncomeMonthlyMap() {
+        HashMap<String, HashMap<Boolean, Integer>> informationByMonthlyReport = new HashMap<>();
+        for (String monthName : monthlyTransactionsMap.keySet()) {
+            for (MonthlyReportTransaction transaction : monthlyTransactionsMap.get(monthName)) {
+                if (!informationByMonthlyReport.containsKey(monthName)) {
+                    informationByMonthlyReport.put(monthName, new HashMap<>());
+                }
+                HashMap<Boolean, Integer> isExpenceToAmount = informationByMonthlyReport.get(monthName);
+                isExpenceToAmount.put(transaction.isExpence, isExpenceToAmount.getOrDefault(transaction.isExpence, 0) + transaction.amount);
+            }
+        }
+        return  informationByMonthlyReport;
+    }
 }
